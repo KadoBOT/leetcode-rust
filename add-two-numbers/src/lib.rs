@@ -27,6 +27,7 @@ mod tests {
         assert_eq!(7, n1.val);
         assert_eq!(0, n2.val);
         assert_eq!(8, n3.val);
+        assert_eq!(None, n3.next);
     }
 }
 
@@ -43,47 +44,38 @@ impl ListNode {
     }
 }
 
-fn reverse(n: i64) -> i64 {
-    let mut num = n;
-    let mut reversed = 0;
-
-    while num != 0 {
-        reversed = reversed * 10 + num % 10;
-        num /= 10;
-    }
-
-    reversed
-}
-
-fn get_result(list: Option<Box<ListNode>>) -> i64 {
-    let mut result: Vec<String> = vec![];
-    let mut list = list;
-    while let Some(l) = list {
-        result.push(reverse(l.val.into()).to_string());
-        list = l.next;
-    }
-
-    result.reverse();
-    let num_str = result.join("");
-    num_str.parse().unwrap()
-}
-
 pub fn add_two_numbers(
     l1: Option<Box<ListNode>>,
     l2: Option<Box<ListNode>>,
 ) -> Option<Box<ListNode>> {
-    let mut list: Option<Box<ListNode>> = None;
-    let result_one = get_result(l1);
-    let result_two = get_result(l2);
-    let total_vec = (result_one + result_two)
-        .to_string()
-        .chars()
-        .map(|d| d.to_digit(10).unwrap())
-        .collect::<Vec<_>>();
-    for num in total_vec.iter() {
-        let mut new_list = ListNode::new(*num as i32);
-        new_list.next = list;
-        list = Some(Box::new(new_list));
+    if l1.is_none() && l2.is_none() {
+        return None;
     }
-    list
+
+    pub fn get_result(
+        l1: Option<Box<ListNode>>,
+        l2: Option<Box<ListNode>>,
+        acc: i32,
+    ) -> Option<Box<ListNode>> {
+        let l1 = l1.unwrap_or_else(|| Box::new(ListNode::new(0)));
+        let l2 = l2.unwrap_or_else(|| Box::new(ListNode::new(0)));
+
+        let total = l1.val + l2.val + acc;
+        let mut next = None;
+        if l1.next.is_some() || l2.next.is_some() {
+            let new_acc = match total >= 10 {
+                true => 1,
+                false => 0,
+            };
+            next = get_result(l1.next, l2.next, new_acc);
+        } else if total >= 10 {
+            next = Some(Box::new(ListNode::new(1)));
+        }
+
+        let mut result = ListNode::new(total % 10);
+        result.next = next;
+        Some(Box::new(result))
+    }
+
+    get_result(l1, l2, 0)
 }
